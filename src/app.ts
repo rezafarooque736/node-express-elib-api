@@ -1,8 +1,9 @@
 import express from "express";
 import globalErrorHandler from "./middlewares/global-error-handler";
-import usersRouters from "./user/users-routers";
+import userRouter from "./user/user-router";
 
 const app = express();
+app.use(express.json());
 
 // Routes
 app.get("/api/v1", (req, res, next) => {
@@ -11,7 +12,7 @@ app.get("/api/v1", (req, res, next) => {
 
 // app.use("/api/v1/auth", authRoutes);
 // app.use("/api/v1/books", booksRoutes);
-app.use("/api/v1/users", usersRouters);
+app.use("/api/v1/users", userRouter);
 
 // global error handler
 app.use(globalErrorHandler);

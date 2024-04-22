@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import UserModel from "./user-model";
+import { hash } from "bcrypt";
 
 // Register a new user
 const registerUser = async (
@@ -22,6 +23,9 @@ const registerUser = async (
     const err = createHttpError(400, "User already exists");
     return next(err);
   }
+
+  // password hash
+  const hashedPassword = await hash(password, 10);
 
   return res.status(200).json({
     message: "User registered successfully",

@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
+import UserModel from "./user-model";
 
 // Register a new user
 const registerUser = async (
@@ -12,6 +13,13 @@ const registerUser = async (
   // validate user input
   if (!name || !email || !password) {
     const err = createHttpError(400, "Please provide all fields");
+    return next(err);
+  }
+
+  // Database call
+  const user = await UserModel.findOne({ email });
+  if (user) {
+    const err = createHttpError(400, "User already exists");
     return next(err);
   }
 

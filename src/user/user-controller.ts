@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import userModel from "./user-model";
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import { config } from "../config/config";
 import { UserProps } from "./user-types";
@@ -72,4 +72,56 @@ const registerUser = async (
   }
 };
 
-export { registerUser };
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  // validate user input
+  if (!email || !password) {
+    const err = createHttpError(400, "All fileds are required");
+    return next(err);
+  }
+
+  let user;
+
+  try {
+    // database call
+    // check if user exists in database or not
+    user = await userModel.findOne({ email });
+    if (!user) {
+      const err = createHttpError(404, "User not found");
+      return next(err);
+    }
+  } catch (error) {
+    const err = createHttpError(
+      500,
+      "Error while getting user from the database"
+    );
+    return next(err);
+  }
+
+  const isPasswordMatch = await compare(password, user.password);
+
+  if (!isPasswordMatch) {
+    const err = createHttpError(400, "Invalid password");
+    return next(err);
+  }
+  try {
+    // generate jwt token
+    const token = sign({ sub: user._id }, config.jwtSecret as string, {
+      expiresIn: "7d",
+      algorithm: "HS256",
+    });
+
+    // send response
+    return res.status(200).json({
+      message: "User logged in successfully",
+      id: user._id,
+      accessToken: token,
+    });
+  } catch (error) {
+    const err = createHttpError(500, "Error while signing the jwt");
+    return next(err);
+  }
+};
+
+export { registerUser, loginUser };

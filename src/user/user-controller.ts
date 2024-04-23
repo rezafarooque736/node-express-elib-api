@@ -4,6 +4,7 @@ import userModel from "./user-model";
 import { hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import { config } from "../config/config";
+import { UserProps } from "./user-types";
 
 // Register a new user
 const registerUser = async (
@@ -20,35 +21,55 @@ const registerUser = async (
   }
 
   // Database call
-  const user = await userModel.findOne({ email });
-  if (user) {
-    const err = createHttpError(400, "User already exists");
+  try {
+    const user = await userModel.findOne({ email });
+    if (user) {
+      const err = createHttpError(400, "User already exists");
+      return next(err);
+    }
+  } catch (error) {
+    const err = createHttpError(
+      500,
+      "Error while getting user from the database"
+    );
     return next(err);
   }
 
   // password hash
   const hashedPassword = await hash(password, 10);
 
-  // Create a new user
-  const newUser = await userModel.create({
-    name,
-    email,
-    password: hashedPassword,
-  });
+  let newUser: UserProps;
 
-  // Token generation using JWT, and send it to the client as a cookie
-  // first parameter is the payload, second is the secret key and third is the options
-  const token = sign({ sub: newUser._id }, config.jwtSecret as string, {
-    expiresIn: "7d",
-    algorithm: "HS256",
-  });
+  try {
+    // Create a new user
+    newUser = await userModel.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
+  } catch {
+    const err = createHttpError(500, "Error while creating a new user");
+    return next(err);
+  }
 
-  // Send response
-  return res.status(201).json({
-    message: "User registered successfully",
-    id: newUser._id,
-    accessToken: token,
-  });
+  try {
+    // Token generation using JWT, and send it to the client as a cookie
+    // first parameter is the payload, second is the secret key and third is the options
+    const token = sign({ sub: newUser._id }, config.jwtSecret as string, {
+      expiresIn: "7d",
+      algorithm: "HS256",
+    });
+
+    // Send response
+    return res.status(201).json({
+      message: "User registered successfully",
+      id: newUser._id,
+      accessToken: token,
+    });
+  } catch (error) {
+    const err = createHttpError(500, "Error while signing the jwt");
+    return next(err);
+  }
 };
 
 export { registerUser };

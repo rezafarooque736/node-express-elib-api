@@ -38,7 +38,7 @@ const userSchema: Schema<UserProps> = new Schema(
   }
 );
 
-const UserModel =
+const userModel =
   (models.user as Model<UserProps>) || model<UserProps>("User", userSchema);
 
-export default UserModel;
+export default userModel;

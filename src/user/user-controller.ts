@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import UserModel from "./user-model";
+import userModel from "./user-model";
 import { hash } from "bcrypt";
+import { sign } from "jsonwebtoken";
+import { config } from "../config/config";
 
 // Register a new user
 const registerUser = async (
@@ -18,7 +20,7 @@ const registerUser = async (
   }
 
   // Database call
-  const user = await UserModel.findOne({ email });
+  const user = await userModel.findOne({ email });
   if (user) {
     const err = createHttpError(400, "User already exists");
     return next(err);
@@ -27,8 +29,25 @@ const registerUser = async (
   // password hash
   const hashedPassword = await hash(password, 10);
 
-  return res.status(200).json({
+  // Create a new user
+  const newUser = await userModel.create({
+    name,
+    email,
+    password: hashedPassword,
+  });
+
+  // Token generation using JWT, and send it to the client as a cookie
+  // first parameter is the payload, second is the secret key and third is the options
+  const token = sign({ sub: newUser._id }, config.jwtSecret as string, {
+    expiresIn: "7d",
+    algorithm: "HS256",
+  });
+
+  // Send response
+  return res.status(201).json({
     message: "User registered successfully",
+    id: newUser._id,
+    accessToken: token,
   });
 };
 

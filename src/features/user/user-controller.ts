@@ -3,8 +3,8 @@ import createHttpError from "http-errors";
 import userModel from "./user-model";
 import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
-import { config } from "../config/config";
-import { UserProps } from "./user-types";
+import { config } from "../../config/config";
+import { IUser } from "./user-types";
 
 // Register a new user
 const registerUser = async (
@@ -38,7 +38,7 @@ const registerUser = async (
   // password hash
   const hashedPassword = await hash(password, 10);
 
-  let newUser: UserProps;
+  let newUser: IUser;
 
   try {
     // Create a new user
@@ -61,7 +61,7 @@ const registerUser = async (
     });
 
     // Send response
-    return res.status(201).json({
+    res.status(201).json({
       message: "User registered successfully",
       id: newUser._id,
       accessToken: token,
@@ -113,7 +113,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     // send response
-    return res.status(200).json({
+    res.status(200).json({
       message: "User logged in successfully",
       id: user._id,
       accessToken: token,

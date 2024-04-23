@@ -1,7 +1,7 @@
 import { Model, Schema, model, models } from "mongoose";
-import { UserProps } from "./user-types";
+import { IUser } from "./user-types";
 
-const userSchema: Schema<UserProps> = new Schema(
+const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -39,6 +39,6 @@ const userSchema: Schema<UserProps> = new Schema(
 );
 
 const userModel =
-  (models.user as Model<UserProps>) || model<UserProps>("User", userSchema);
+  (models.user as Model<IUser>) || model<IUser>("User", userSchema);
 
 export default userModel;

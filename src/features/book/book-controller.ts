@@ -174,6 +174,11 @@ const listBooks = async (req: Request, res: Response, next: NextFunction) => {
     // TODO: add pagination using mongoose pagination package
     const books = await bookModel.find();
 
+    if (!books) {
+      const err = createHttpError(404, "No books found");
+      return next(err);
+    }
+
     res.status(200).json({
       message: "Books fetched successfully",
       books,
@@ -187,4 +192,32 @@ const listBooks = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createBook, updateBook, listBooks };
+const getSingleBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { bookId } = req.params;
+
+    const book = await bookModel.findById(bookId);
+
+    if (!book) {
+      const err = createHttpError(404, "Book not found");
+      return next(err);
+    }
+
+    res.status(200).json({
+      message: "Book fetched successfully",
+      book,
+    });
+  } catch (error) {
+    const err = createHttpError(
+      500,
+      "Error while getting single book from the database"
+    );
+    return next(err);
+  }
+};
+
+export { createBook, updateBook, listBooks, getSingleBook };

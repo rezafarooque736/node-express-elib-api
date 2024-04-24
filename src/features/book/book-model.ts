@@ -32,6 +32,6 @@ const bookSchema = new Schema<IBook>(
 );
 
 const bookModel =
-  (models.book as Model<IBook>) || model<IBook>("book", bookSchema);
+  (models.book as Model<IBook>) || model<IBook>("Book", bookSchema);
 
 export default bookModel;

@@ -269,10 +269,7 @@ const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
       return next(err);
     }
 
-    res.status(204).json({
-      message: "Book deleted successfully",
-      id: bookId,
-    });
+    res.sendStatus(204);
   } catch (error) {
     const err = createHttpError(
       500,

@@ -80,4 +80,111 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createBook };
+const updateBook = async (req: Request, res: Response, next: NextFunction) => {
+  const { title, genre } = req.body;
+  const { bookId } = req.params;
+
+  const book = await bookModel.findById(bookId);
+
+  if (!book) {
+    const err = createHttpError(404, "Book not found");
+    return next(err);
+  }
+
+  const _req = req as AuthRequest;
+  // check access
+  if (book.author.toString() !== _req.userId.toString()) {
+    const err = createHttpError(
+      403,
+      "You are unauthorised to update this book"
+    );
+    return next(err);
+  }
+
+  // check if image field exists
+  const files = req.files as { [filename: string]: Express.Multer.File[] };
+
+  let completeCoverImage = "";
+  if (files.coverImage) {
+    const filename = files.coverImage[0].filename;
+    const coverMImeType = files.coverImage[0].mimetype.split("/").at(-1);
+
+    // send files to cloudinary
+    const filePath = path.resolve(
+      __dirname,
+      "../../../public/data/uploads",
+      filename
+    );
+
+    const uploadResult = await cloudinary.uploader.upload(filePath, {
+      filename_override: filename,
+      folder: "book-covers",
+      format: coverMImeType,
+    });
+
+    completeCoverImage = uploadResult.secure_url;
+    await fs.promises.unlink(filePath);
+  }
+
+  // check if file field exists
+  let completeFileName = "";
+  if (files.file) {
+    const filename = files.file[0].filename;
+    const fileMImeType = files.file[0].mimetype.split("/").at(-1);
+
+    // send files to cloudinary
+    const filePath = path.resolve(
+      __dirname,
+      "../../../public/data/uploads",
+      filename
+    );
+
+    const uploadResult = await cloudinary.uploader.upload(filePath, {
+      filename_override: filename,
+      folder: "book-pdfs",
+      format: fileMImeType,
+      resource_type: "raw",
+    });
+
+    completeFileName = uploadResult.secure_url;
+    await fs.promises.unlink(filePath);
+  }
+
+  const updateBook = await bookModel.findByIdAndUpdate(
+    bookId,
+    {
+      title,
+      genre,
+      coverImage: completeCoverImage ? completeCoverImage : book.coverImage,
+      file: completeFileName ? completeFileName : book.file,
+    },
+    {
+      new: true,
+    }
+  );
+
+  res.status(200).json({
+    message: "Book updated successfully",
+    updateBook,
+  });
+};
+
+const listBooks = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // TODO: add pagination using mongoose pagination package
+    const books = await bookModel.find();
+
+    res.status(200).json({
+      message: "Books fetched successfully",
+      books,
+    });
+  } catch (error) {
+    const err = createHttpError(
+      500,
+      "Error while getting books from the database"
+    );
+    return next(err);
+  }
+};
+
+export { createBook, updateBook, listBooks };
